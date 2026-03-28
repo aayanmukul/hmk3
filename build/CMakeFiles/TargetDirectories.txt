@@ -1,0 +1,5 @@
+/home/aayan/Documents/ECE4122/Hmk3/claude/HW3_Complete/build/CMakeFiles/HW3.dir
+/home/aayan/Documents/ECE4122/Hmk3/claude/HW3_Complete/build/CMakeFiles/copy_assets.dir
+/home/aayan/Documents/ECE4122/Hmk3/claude/HW3_Complete/build/CMakeFiles/copy_shaders.dir
+/home/aayan/Documents/ECE4122/Hmk3/claude/HW3_Complete/build/CMakeFiles/edit_cache.dir
+/home/aayan/Documents/ECE4122/Hmk3/claude/HW3_Complete/build/CMakeFiles/rebuild_cache.dir

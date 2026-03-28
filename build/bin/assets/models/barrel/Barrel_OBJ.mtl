@@ -1,0 +1,7 @@
+newmtl barrel
+Ka 0.6 0.6 0.6  # Ambient color
+Kd 0.8 0.8 0.8  # Diffuse color
+Ks 1.0 1.0 1.0  # Specular color
+Ns 100          # Shininess
+d 1.0           # Dissolve (transparency)
+map_Kd Barrel_textures/barrel_BaseColor.png  # Diffuse texture map
