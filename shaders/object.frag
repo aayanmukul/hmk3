@@ -25,7 +25,7 @@ struct DirLight {
 };
 uniform DirLight dirLight;
 
-#define MAX_POINT_LIGHTS 2
+#define MAX_POINT_LIGHTS 4
 struct PointLight {
     vec3  position;
     float constant;

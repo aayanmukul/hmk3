@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <utility>
 
 #include "shader.h"
 
@@ -38,14 +39,47 @@ public:
 
     Mesh(const Mesh&)            = delete;
     Mesh& operator=(const Mesh&) = delete;
-    Mesh(Mesh&&)                 = default;
-    Mesh& operator=(Mesh&&)      = default;
+
+    // Custom Move Constructor
+    Mesh(Mesh&& other) noexcept
+        : vertices(std::move(other.vertices))
+        , indices (std::move(other.indices))
+        , textures(std::move(other.textures))
+        , m_vao(std::exchange(other.m_vao, 0))
+        , m_vbo(std::exchange(other.m_vbo, 0))
+        , m_ebo(std::exchange(other.m_ebo, 0))
+    {}
+
+    // Custom Move Assignment
+    Mesh& operator=(Mesh&& other) noexcept
+    {
+        if (this != &other)
+        {
+            // Clean up existing resources before overwriting
+            glDeleteVertexArrays(1, &m_vao);
+            glDeleteBuffers(1, &m_vbo);
+            glDeleteBuffers(1, &m_ebo);
+
+            vertices = std::move(other.vertices);
+            indices  = std::move(other.indices);
+            textures = std::move(other.textures);
+
+            // Steal resources and nullify the source
+            m_vao = std::exchange(other.m_vao, 0);
+            m_vbo = std::exchange(other.m_vbo, 0);
+            m_ebo = std::exchange(other.m_ebo, 0);
+        }
+        return *this;
+    }
 
     ~Mesh()
     {
-        glDeleteVertexArrays(1, &m_vao);
-        glDeleteBuffers(1, &m_vbo);
-        glDeleteBuffers(1, &m_ebo);
+        // Now it's safe to delete because moved-from objects will have a VAO of 0
+        if (m_vao != 0) {
+            glDeleteVertexArrays(1, &m_vao);
+            glDeleteBuffers(1, &m_vbo);
+            glDeleteBuffers(1, &m_ebo);
+        }
     }
 
     void draw(Shader& shader) const

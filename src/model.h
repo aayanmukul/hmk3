@@ -51,7 +51,8 @@ private:
                        | aiProcess_FlipUVs
                        | aiProcess_CalcTangentSpace
                        | aiProcess_GenNormals
-                       | aiProcess_JoinIdenticalVertices;
+                       | aiProcess_JoinIdenticalVertices
+                       | aiProcess_GlobalScale;
 
         const aiScene* scene = importer.ReadFile(path, flags);
 

@@ -137,8 +137,8 @@ static GLuint loadTerrainTexture(const char* path)
 static void buildTerrain()
 {
     const float Y    = -0.001f;
-    const float HALF = 50.f;
-    const float TILE = 20.f;
+    const float HALF = 250.f;
+    const float TILE = 100.f;
 
     float verts[] = {
         -HALF, Y, -HALF,  0.f, 1.f, 0.f,  0.f,  TILE,
@@ -174,31 +174,44 @@ static void buildTerrain()
 
 // ── Lighting ─────────────────────────────────────────────────────────────────
 
+
 static void setLightUniforms(Shader& sh)
 {
-    // Directional light (warm late-afternoon sun)
+    // 1. Dim the sun to make it a true dusk/night scene so lamps are visible
     sh.setVec3("dirLight.direction", -0.5f, -1.0f, -0.5f);
-    sh.setVec3("dirLight.ambient",   0.30f, 0.24f, 0.18f);
-    sh.setVec3("dirLight.diffuse",   1.0f,  0.8f,  0.6f);
-    sh.setVec3("dirLight.specular",  0.8f,  0.7f,  0.5f);
+    sh.setVec3("dirLight.ambient",   0.05f, 0.05f, 0.08f); // Very dark ambient
+    sh.setVec3("dirLight.diffuse",   0.15f, 0.15f, 0.25f); // Faint moonlight
+    sh.setVec3("dirLight.specular",  0.1f,  0.1f,  0.1f);
 
-    // Point light 0 — lamp at (5, 4, 0)
-    sh.setVec3 ("pointLights[0].position", 5.f, 4.f, 0.f);
-    sh.setVec3 ("pointLights[0].ambient",  0.05f, 0.05f, 0.06f);
-    sh.setVec3 ("pointLights[0].diffuse",  0.9f,  0.9f,  1.0f);
-    sh.setVec3 ("pointLights[0].specular", 0.9f,  0.9f,  1.0f);
-    sh.setFloat("pointLights[0].constant",  1.0f);
-    sh.setFloat("pointLights[0].linear",    0.09f);
-    sh.setFloat("pointLights[0].quadratic", 0.032f);
+    // 2. Define a warm, bright yellow/orange color for the lamps
+    glm::vec3 lampAmb(0.05f, 0.05f, 0.02f);
+    glm::vec3 lampDiff(1.0f, 0.8f, 0.4f);
+    glm::vec3 lampSpec(1.0f, 0.9f, 1.0f);
 
-    // Point light 1 — lamp at (-5, 4, 5)
-    sh.setVec3 ("pointLights[1].position", -5.f, 4.f, 5.f);
-    sh.setVec3 ("pointLights[1].ambient",  0.05f, 0.05f, 0.06f);
-    sh.setVec3 ("pointLights[1].diffuse",  0.9f,  0.9f,  1.0f);
-    sh.setVec3 ("pointLights[1].specular", 0.9f,  0.9f,  1.0f);
-    sh.setFloat("pointLights[1].constant",  1.0f);
-    sh.setFloat("pointLights[1].linear",    0.09f);
-    sh.setFloat("pointLights[1].quadratic", 0.032f);
+    // 3. Array of lamp positions (matching the X and Z from the scene array)
+    // The Y is set to 3.8f to simulate the light emitting from the top bulb area
+    // 3. Array of lamp positions (matching the X and Z from the scene array)
+    // The Y is set to 3.8f to simulate the light emitting from the top bulb area
+    glm::vec3 lightPositions[] = {
+        {  14.f, 3.8f,  15.f }, // Matches Lamp 1
+        {   2.f, 3.8f,  15.f }, // Matches Lamp 2
+        {  14.f, 3.8f,  23.f }, // Matches Lamp 3
+        {   2.f, 3.8f,  23.f }  // Matches Lamp 4
+    };
+
+    // 4. Send all 4 lights to the shader using a loop
+    for (int i = 0; i < 4; ++i) {
+        std::string base = "pointLights[" + std::to_string(i) + "].";
+        sh.setVec3 (base + "position",  lightPositions[i]);
+        sh.setVec3 (base + "ambient",   lampAmb);
+        sh.setVec3 (base + "diffuse",   lampDiff);
+        sh.setVec3 (base + "specular",  lampSpec);
+        
+        // Attenuation settings (covers about a distance of 50 units)
+        sh.setFloat(base + "constant",  1.0f);
+        sh.setFloat(base + "linear",    0.09f);
+        sh.setFloat(base + "quadratic", 0.032f);
+    }
 }
 
 // ── Draw helpers ─────────────────────────────────────────────────────────────
@@ -301,32 +314,38 @@ int main(int argc, char* argv[])
     buildTerrain();
 
     // Scene objects with varied position, rotation, scale
+    // Scene objects with varied position, rotation, scale
     std::vector<SceneObject> scene = {
-        // Farmhouse at center-back
-        { &mFarmhouse, {  0.f, 0.f, -10.f },   0.f, {0,1,0}, { 1.0f, 1.0f, 1.0f }, 16.f },
+        // Farmhouse pushed further back to create a front yard
+        { &mFarmhouse, {  0.f, 25.f, -15.f },   90.f, {0,1,0}, { 0.5f, 0.5f, 0.5f }, 16.f },
 
-        // Barrels near farmhouse (non-uniform scale on barrel 2)
-        { &mBarrel,    {  3.5f, 0.f, -8.f },    0.f, {0,1,0}, { 1.0f, 1.0f, 1.0f }, 32.f },
-        { &mBarrel,    {  4.5f, 0.f, -8.f },   15.f, {0,1,0}, { 0.8f, 1.2f, 0.8f }, 32.f },
+        // Barrel Stack (left side of the house)
+        { &mBarrel,    { -8.3f, 0.0f, 7.f },  15.f, {0,1,0}, { 3.0f, 3.0f, 3.0f }, 32.f }, // Base left
+        { &mBarrel,    { -5.8f, 0.0f, 7.f },  0.f, {0,1,0}, { 3.0f, 3.0f, 3.0f }, 32.f }, // Base right
+        { &mBarrel,    { -6.f, 4.f, 7.f },   90.f, {0,0,1}, { 3.0f, 3.0f, 3.0f }, 32.f }, // Stacked on top (Adjust Y: 1.3f if it floats/clips)
 
-        // Pine trees at corners (rotated)
-        { &mTree,      { 12.f, 0.f,  12.f },   10.f, {0,1,0}, { 1.0f, 1.0f, 1.0f },  8.f },
-        { &mTree,      {-12.f, 0.f,  12.f },   35.f, {0,1,0}, { 1.2f, 1.0f, 1.2f },  8.f },
-        { &mTree,      { 12.f, 0.f, -12.f },   45.f, {0,1,0}, { 1.0f, 1.0f, 1.0f },  8.f },
-        { &mTree,      {-12.f, 0.f, -12.f },    0.f, {0,1,0}, { 0.9f, 1.1f, 0.9f },  8.f },
+        // Pine trees spread around the outer property
+        { &mTree,      { 25.f, -1.f, -20.f },   10.f, {0,1,0}, { 4.0f, 4.0f, 4.0f },  8.f },
+        { &mTree,      {-30.f, -1.f, -15.f },   35.f, {0,1,0}, { 3.2f, 3.2f, 3.2f },  8.f },
+        { &mTree,      { 25.f, -1.f,  15.f },   85.f, {0,1,0}, { 4.f, 10.f, 4.f },  8.f },
+        { &mTree,      {-22.f, -1.f,  18.f },  -20.f, {0,1,0}, { 3.1f, 8.1f, 3.1f },  8.f },
+        { &mTree,      { -8.f, -1.f, -30.f },   45.f, {0,1,0}, { 3.0f, 3.0f, 3.0f },  8.f }, // Behind the house
 
-        // Park bench (rotated)
-        { &mBench,     { -6.f, 0.f,  2.f },   -30.f, {0,1,0}, { 1.0f, 1.0f, 1.0f }, 16.f },
+        // Park bench placed under one of the front-right trees, facing the path
+        { &mBench,     { 22.f, 0.f,  13.f },  -60.f, {0,1,0}, { .05f, .05f, .05f }, 16.f },
 
-        // Street lamps (scaled down)
-        { &mLamp,      {  5.f, 0.f,  0.f },     0.f, {0,1,0}, { 0.5f, 0.5f, 0.5f }, 64.f },
-        { &mLamp,      { -5.f, 0.f,  5.f },     0.f, {0,1,0}, { 0.5f, 0.5f, 0.5f }, 64.f },
+        // Street lamps lining a "pathway" leading to the farmhouse
+        { &mLamp,      {  14.f, 0.f,   15.f },    0.f, {0,1,0}, { 1.0f, 1.0f, 1.0f }, 64.f },
+        { &mLamp,      { 2.f, 0.f,   15.f },    0.f, {0,1,0}, { 1.0f, 1.0f, 1.0f }, 64.f },
+        { &mLamp,      {  14.f, 0.f,  23.f },    0.f, {0,1,0}, { 1.0f, 0.8f, 1.0f }, 64.f },
+        { &mLamp,      { 2.f, 0.f,  23.f },    0.f, {0,1,0}, { 1.0f, 0.8f, 1.0f }, 64.f },
 
-        // Robot (facing camera, non-uniform scale)
-        { &mRobot,     { -3.f, 0.f, -4.f },   180.f, {0,1,0}, { 0.8f, 0.8f, 0.8f }, 64.f },
+        // Farmer standing near the farmhouse entrance
+        { &mFarmer,    { -15.f, 7.f, 14.f },  140.f, {0,1,0}, { 5.0f, 5.0f, 5.0f }, 16.f },
 
-        // Farmer standing near farmhouse entrance
-        { &mFarmer,    {  1.f, 0.f, -6.f },   160.f, {0,1,0}, { 1.0f, 1.0f, 1.0f }, 16.f },
+        // Robot exploring the yard
+        { &mRobot,     { -15.f, 0.f,   10.f },  110.f, {0,1,0}, { 1.3f, 1.3f, 1.3f }, 128.f },
+        { &mRobot,     { 1.f, 0.f,   16.f },  110.f, {0,1,0}, { 0.5f, 0.5f, 0.5f }, 128.f }
     };
 
     // Fog color matches sky
